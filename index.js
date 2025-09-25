@@ -31,18 +31,31 @@ app.use(async (req, res) => {
       }
     });
 
+    // Print log access
+    console.log(`[${response.status}] ${req.method} ${targetUrl}`);
+
+    // Exclude Forward headers
+    const excludeHeaders = [
+      "content-encoding",
+      "transfer-encoding",
+    ];
+
     // Forward headers (filtered)
     response.headers.forEach((value, name) => {
-      if (!['content-encoding', 'transfer-encoding'].includes(name.toLowerCase())) {
+      if (!excludeHeaders.includes(name.toLowerCase())) {
         res.setHeader(name, value);
       }
     });
 
-    const body = await response.arrayBuffer();
-    res.status(response.status).send(Buffer.from(body));
+    // Get Body
+    const bodyArrayBuffer = await response.arrayBuffer();
+    const bodyBuffer = Buffer.from(bodyArrayBuffer);
 
-    // Print log access
-    console.log(`[${response.status}] ${req.method} ${targetUrl}`);
+    // Override CORS Headers
+    res.setHeader('Access-Control-Allow-Origin', '*');
+
+    // Send Response
+    res.status(response.status).send(bodyBuffer);
   } catch (err) {
     console.error('Proxy error:', err);
     res.status(500).send('Proxy error');
